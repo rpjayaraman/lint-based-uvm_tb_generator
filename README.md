@@ -13,3 +13,12 @@ currently this version supports dut file which uses port declaration. Next versi
 please refer test_module.v for sample DUT.
 
 EDA link to the generated testbench: https://www.edaplayground.com/x/hpt2
+
+#Version 0.1
+##prerequisite
+ - Intall latest verilator version and Verilator UVM from https://github.com/antmicro/uvm-verilator.git
+
+1. Added verilator support -> when running the script -m verilator -c. It will create verilator compatible UVM testbench along with the Make file
+   a.Once Tb is created, Navigate to {DUT_NAME}_verilator folder and execute "make all"
+2. For EDAPlayground, pass -m edaplayground (check Makefile for reference)
+
