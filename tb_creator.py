@@ -266,7 +266,7 @@ def create_seqitem(port_list,dut_name,tb_path):
       if any(excluded_signal.lower() in str(l_ports).lower() for excluded_signal in excluded_signals):
         logging.debug(f"Excluding signal: {l_ports}")
         continue
-      tb_seq_input = str(l_ports).replace("input","rand bit").replace("output","bit");
+      tb_seq_input = str(l_ports).replace("input","rand bit").replace("output reg","bit").replace("output","bit");
       file.write(tb_seq_input)
 
     file.write("\n")
