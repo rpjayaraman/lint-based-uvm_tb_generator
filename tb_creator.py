@@ -172,7 +172,7 @@ def create_interface(port_list,dut_name,tb_path,verilator_mode):
       cr_list.append(j)
     if re.search(r".*.(clk|clock).*",str(j) , re.IGNORECASE):
       only_clk.append(j)
-  ports = ", ".join(cr_list)
+  ports = ", ".join(only_clk)
   with open(l_intf_path,"a+") as file:
     file.write("\ninterface "+interface_name+" (input logic "+ports+");\n")
     if(param_flag):
@@ -180,8 +180,8 @@ def create_interface(port_list,dut_name,tb_path,verilator_mode):
         file.write(parameter_i)
     for l_ports in port_list:
       if l_ports not in cr_list:
-        tb_interface_input = str(l_ports).replace("input","logic").replace("output","logic");
-        if not re.search(r".*.(clk|reset|rst|clock).*",str(tb_interface_input), re.IGNORECASE):
+        tb_interface_input = str(l_ports).replace("input","logic").replace("output reg","logic").replace("output","logic");
+        if not re.search(r".*.(clk|clock).*",str(tb_interface_input), re.IGNORECASE):
           file.write(tb_interface_input)
     file.write("\n//--------------------------------------")
     file.write("\n//Driver Clocking Block")
@@ -246,7 +246,7 @@ Returns:
 def create_seqitem(port_list,dut_name,tb_path):
   #http://www.sunburst-design.com/papers/CummingsSNUG2014SV_UVM_Transactions.pdf
   #Defining the excluded signal list
-  excluded_signals = ["clk", "reset", "clock", "rst"]
+  excluded_signals = ["clk", "clock"]
   l_seq_file_name=f"{dut_name.strip()}_seq_item.sv"
   global seq_item_name #TODO Move this outside of the function
   seq_item_name =f"{dut_name.strip()}_seq_item"
@@ -266,7 +266,7 @@ def create_seqitem(port_list,dut_name,tb_path):
       if any(excluded_signal.lower() in str(l_ports).lower() for excluded_signal in excluded_signals):
         logging.debug(f"Excluding signal: {l_ports}")
         continue
-      tb_seq_input = str(l_ports).replace("input","rand bit").replace("output","bit");
+      tb_seq_input = str(l_ports).replace("input","rand bit").replace("output reg","bit").replace("output","bit");
       file.write(tb_seq_input)
 
     file.write("\n")
@@ -821,7 +821,7 @@ def create_top(port_list,dut_name,tb_path, verilator_mode):
     file.write("\n//--------------------------------------")
     for l_ports in input_list:
       replace_to_bit = str(l_ports).replace("input","bit")
-      if re.search(r".*.(clk|reset|rst|clock).*", replace_to_bit, re.IGNORECASE):
+      if re.search(r".*.(clk|clock).*", replace_to_bit, re.IGNORECASE):
         clk_rst_list.append(str(replace_to_bit)) #Containts clock and reset
     for i in clk_rst_list:
       file.write(i)
@@ -834,7 +834,7 @@ def create_top(port_list,dut_name,tb_path, verilator_mode):
       #  only_clk.append(j)
       if re.search(r".*.(reset|rst).*",str(j) , re.IGNORECASE):
         only_rst.append(j)
-    clk_rst_initial = "=0;".join(cr_list)
+    clk_rst_initial = "=0;".join(only_clk)
     clk_rst_initial += "=0;"
     file.write(clk_rst_initial)
     file.write("\nend")
@@ -850,7 +850,7 @@ def create_top(port_list,dut_name,tb_path, verilator_mode):
     file.write("\n//Interface Instance")
     file.write("\n//--------------------------------------")
     ports = ", ".join(cr_list)
-    file.write("\n"+interface_name+" intf("+ports+");\n")
+    file.write("\n"+interface_name+" intf("+only_clk_i+");\n")
     file.write("\n//--------------------------------------")
     file.write("\n//DUT Instance")
     file.write("\n//--------------------------------------")
