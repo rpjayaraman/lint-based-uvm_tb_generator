@@ -1,3 +1,6 @@
+# Youtube Link: https://www.youtube.com/@Random_dv_guy
+
+
 # lint-based-uvm_tb_generator
 
 This Python-based `tb_creator` script uses the `pyslang` module to parse a design file and collect input, output, and parameter information. Based on this data, the `tb_creator` script generates a fully functional UVM-based testbench (excluding driver/monitor/scoreboard logic).
