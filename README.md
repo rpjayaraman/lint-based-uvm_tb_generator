@@ -1,5 +1,12 @@
 ## Youtube Link: https://www.youtube.com/@Random_dv_guy
 
+## Version History 
+Version 0.0 -> Generate UVM TB for EDAPLAYGROUND
+
+Version 0.1 -> Generate UVM TB for Verilator and EDAPLAYGROUND
+
+Verison 0.2 -> Added support for visualization to view generated UVM Testbench
+
 
 # lint-based-uvm_tb_generator
 
