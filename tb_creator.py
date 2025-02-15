@@ -983,6 +983,98 @@ def print_port_details(tree):
                 port_name = str(m_i.declarators)
                 port_data_type= str(m_i.header.dataType)
                 print(f"    Direction: {port_direction}    Name: {port_name}   DataType: {port_data_type}")
+def create_tb_graph(dut_name, tb_path):
+    """
+    Generates a graph visualization for generated UVM testbench structure
+
+    Args:
+        dut_name (str): Name of the Design Under Test (DUT).
+        tb_path (str): Path to the testbench folder.
+
+    Returns:
+        None
+    """
+    try:
+        import pygraphviz as pgv
+    except ImportError:
+        logging.warning("pygraphviz is not installed. Skipping graph creation.")
+        print("pygraphviz is not installed. Skipping graph creation.")
+        return
+
+    dot = pgv.AGraph(comment=f'UVM Testbench - Ports Inside Components', directed=True, strict=False)
+    dot.graph_attr['rankdir'] = 'TB'  # Top-to-Bottom layout
+    dot.graph_attr['splines'] = 'ortho'  # Use orthogonal edges
+
+    # Create a top level to put the test sub graph
+    with dot.subgraph(name='cluster_top', label=top_name, style='rounded') as top_cluster:
+        top_cluster.graph_attr['style'] = 'rounded'
+        top_cluster.graph_attr['labeljust'] = 'l'  # Align label to be on top
+
+        dut_interface_name = f"{dut_name}_interface"
+        top_cluster.add_node('interface', label=dut_interface_name, shape='box', style='filled', fillcolor='lightgreen')
+        top_cluster.add_node('DUT', label="DUT:"+dut_name, shape='box', style='filled', fillcolor='gold')  # Adding DUT under the TOP Cluster.
+
+
+
+        # Creating Test subgraph
+        with top_cluster.subgraph(name='cluster_test', label=f"{dut_name}_test", style='rounded') as test_cluster:
+            test_cluster.graph_attr['style'] = 'rounded'
+            test_cluster.graph_attr['labeljust'] = 'l'  # Align label to be on top
+
+            # Create sequence item node, name the nodes based on dut name
+            dut_seq_item_name = f"{dut_name}_seq_item"
+            dut_sequence_name = f"{dut_name}_sequence"
+
+            test_cluster.add_node('sequence_item', label=dut_seq_item_name + "\n" + dut_sequence_name, shape='note', style='filled', fillcolor='azure')
+
+
+            # Create Env Subgraph.
+            with test_cluster.subgraph(name='cluster_env', label=f"{dut_name}_env", style='rounded') as env_cluster:
+                env_cluster.graph_attr['style'] = 'rounded'
+                env_cluster.graph_attr['labeljust'] = 'l'  # Align label to be on top
+
+                dut_sb_name = f"{dut_name}_scoreboard"
+                env_cluster.add_node('coverage', label="[cov_export]" + "\n" + cov_name, shape='box', style='filled', fillcolor = 'lightpink')
+                env_cluster.add_node('scoreboard', label="[sb_export]" + "\n" + dut_sb_name, shape='box', style='filled', fillcolor='lightpink')
+
+                # Adding component inside Agent.
+                with env_cluster.subgraph(name='cluster_agent', label=f"{dut_name}_agent", style='rounded') as agent_cluster:
+                    agent_cluster.graph_attr['style'] = 'rounded'
+                    agent_cluster.graph_attr['labeljust'] = 'l'
+
+                    dut_sequencer_name = f"{dut_name}_sequencer"
+                    dut_driver_name = f"{dut_name}_driver"
+                    dut_monitor_name = f"{dut_name}_monitor"
+
+                    agent_cluster.add_node('monitor', label=dut_monitor_name + "\n" + "[mon_aport]", shape='box', style='filled', fillcolor='deepskyblue', group = "monitor")
+                    agent_cluster.add_node('sequencer', label=dut_sequencer_name, shape='box', style='filled', fillcolor='deepskyblue', group = "monitor") 
+                    agent_cluster.add_node('driver', label=dut_driver_name, shape='box', style='filled', fillcolor='deepskyblue', group = "monitor") 
+
+                    #Set the graph attribute to be in the right spot for the pointers
+                    agent_cluster.graph_attr["groupsep"] = "1.5"
+
+
+
+        env_cluster.add_edge('monitor','coverage')   
+        env_cluster.add_edge('monitor','scoreboard') 
+        top_cluster.add_edge('driver','interface')   
+        env_cluster.add_edge('sequencer','driver')   
+        test_cluster.add_edge('sequence_item','sequencer')
+        top_cluster.add_edge('interface', 'monitor')
+        top_cluster.add_edge('interface', 'DUT')
+
+    # Save the graph to a file
+    graph_file_path = os.path.join(tb_path, f"{dut_name}_tb_graph.png")
+    try:
+        dot.draw(graph_file_path, prog='dot', format='png')  # Use 'dot' layout engine
+        logging.info(f"Successfully Created -> {graph_file_path}")
+        print(f"Successfully Created -> {graph_file_path}")
+    except Exception as e:
+        logging.error(f"Error generating graph: {e}")
+        print(f"Error generating graph: {e}")
+
+
+
 
 args = eda_argparse()
 inp_test_name = args.test
@@ -1058,6 +1150,10 @@ create_test(dut_name,tb_path)
 create_top(port_list,dut_name,tb_path, sim_mode == 'verilator')
 if sim_mode == 'verilator':
     create_makefile(sanitized_dut_name,verilator_path, coverage_flag, ex_cr)
+
+# Create the UVM TB graph
+create_tb_graph(dut_name, tb_path)
+
 end_time = time.time()
 total_time = end_time - start_time
 print(f'\n************ Successfully created the testbench for {dut_name} in {total_time:.2f} seconds ************')
